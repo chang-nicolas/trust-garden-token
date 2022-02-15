@@ -1,6 +1,9 @@
-pragma solidity ^0.8.0;
+pragma solidity 0.5.16;
 
 import "https://github.com/mathwallet/BSC-Contracts/blob/main/Contracts/BEP20.sol";
+
+import "./context.sol";
+import "./ownable.sol";
 
 interface IBEP20 {
     function totalSupply() external view returns (uint256);
@@ -38,34 +41,6 @@ interface IBEP20 {
         address indexed spender,
         uint256 value
     );
-}
-
-library SafeMath {
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        assert(b <= a);
-        return a - b;
-    }
-
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        assert(c >= a);
-        return c;
-    }
-}
-
-contract Context {
-    // Empty internal constructor, to prevent people from mistakenly deploying
-    // an instance of this contract, which should be used via inheritance.
-    constructor() internal {}
-
-    function _msgSender() internal view returns (address payable) {
-        return msg.sender;
-    }
-
-    function _msgData() internal view returns (bytes memory) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        return msg.data;
-    }
 }
 
 /**
@@ -149,49 +124,7 @@ library SafeMath {
     }
 }
 
-contract Ownable is Context {
-    address private _owner;
-
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
-    constructor() internal {
-        address msgSender = _msgSender();
-        _owner = msgSender;
-        emit OwnershipTransferred(address(0), msgSender);
-    }
-
-    function owner() public view returns (address) {
-        return _owner;
-    }
-
-    modifier onlyOwner() {
-        require(_owner == _msgSender(), "Ownable: caller is not the owner");
-        _;
-    }
-
-    function renounceOwnership() public onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
-    }
-
-    function transferOwnership(address newOwner) public onlyOwner {
-        _transferOwnership(newOwner);
-    }
-
-    function _transferOwnership(address newOwner) internal {
-        require(
-            newOwner != address(0),
-            "Ownable: new owner is the zero address"
-        );
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
-    }
-}
-
-contract TrustGarden is Context, IBEP20, Ownable {
+contract TrustGarden is Context, IBEP20, Ownable, BurnableToken {
     using SafeMath for uint256;
 
     mapping(address => uint256) private _balances;
@@ -204,10 +137,10 @@ contract TrustGarden is Context, IBEP20, Ownable {
     string public _name;
 
     constructor() public {
-        _name = "Trust Garden Token";
-        _symbol = "TGT";
+        _name = "Bloom Seed";
+        _symbol = "BLSeed";
         _decimals = 18;
-        _totalSupply = 100;
+        _totalSupply = 6500000;
         _balances[msg.sender] = _totalSupply;
 
         emit Transfer(address(0), msg.sender, _totalSupply);
@@ -319,13 +252,15 @@ contract TrustGarden is Context, IBEP20, Ownable {
     ) internal {
         require(sender != address(0), "BEP20: transfer from the zero address");
         require(recipient != address(0), "BEP20: transfer to the zero address");
+        uint256 _realAmount = (amount * 92) / 100;
 
         _balances[sender] = _balances[sender].sub(
             amount,
             "BEP20: transfer amount exceeds balance"
         );
-        _balances[recipient] = _balances[recipient].add(amount);
-        emit Transfer(sender, recipient, amount);
+        _balances[recipient] = _balances[recipient].add(_realAmount);
+        burn(amount - _realAmount);
+        emit Transfer(sender, recipient, _realAmount);
     }
 
     function _mint(address account, uint256 amount) internal {
