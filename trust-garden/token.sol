@@ -135,6 +135,7 @@ contract TrustGarden is Context, IBEP20, Ownable, BurnableToken {
     uint8 public _decimals;
     string public _symbol;
     string public _name;
+    uint256 public _burnAmount = 8;
 
     constructor() public {
         _name = "Bloom Seed";
@@ -252,7 +253,7 @@ contract TrustGarden is Context, IBEP20, Ownable, BurnableToken {
     ) internal {
         require(sender != address(0), "BEP20: transfer from the zero address");
         require(recipient != address(0), "BEP20: transfer to the zero address");
-        uint256 _realAmount = (amount * 92) / 100;
+        uint256 _realAmount = (amount * (100 - _burnAmount)) / 100;
 
         _balances[sender] = _balances[sender].sub(
             amount,
